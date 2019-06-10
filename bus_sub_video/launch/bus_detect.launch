@@ -1,0 +1,30 @@
+<launch>
+
+
+   <machine name="thocao_node_1"
+            address="192.168.0.23"
+            user="thocao"
+            password="2019"
+            timeout="30"
+            env-loader="/home/thocao/catkin_ws/devel/remote_env.sh"
+            />
+
+   <machine name="thocao_node_2"
+            address="192.168.0.2"
+            user="thocao"
+            password="2019"
+            timeout="30"
+            env-loader="/home/thocao/catkin_ws/devel/remote_env.sh"
+            />
+
+
+
+    <node name="bus_display_video" pkg="bus_sub_video" type="bus_sub_detect"  />
+
+
+    <node machine="thocao_node_1" name="local" pkg="bus_publisher_video" type="bus_detect" />
+
+    <node machine="thocao_node_2" name="local1" pkg="bus_publisher_video1" type="bus_detect1" />
+
+
+</launch>
