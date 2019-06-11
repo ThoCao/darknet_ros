@@ -164,9 +164,9 @@ void YoloObjectDetector::init()
   boundingBoxesPublisher_ = nodeHandle_.advertise<darknet_ros_msgs::BoundingBoxes>(
       boundingBoxesTopicName, boundingBoxesQueueSize, boundingBoxesLatch);
 
-  detectionImagePublisher_ = nodeHandle_.advertise<sensor_msgs::Image>(detectionImageTopicName,
-                                                                       detectionImageQueueSize,
-                                                                       detectionImageLatch);
+//  detectionImagePublisher_ = nodeHandle_.advertise<sensor_msgs::Image>(detectionImageTopicName,
+//                                                                       detectionImageQueueSize,
+//                                                                       detectionImageLatch);
 
   // Action servers.
   std::string checkForObjectsActionName;
@@ -262,13 +262,13 @@ bool YoloObjectDetector::publishDetectionImage(const cv::Mat& detectionImage)
 {
   if (detectionImagePublisher_.getNumSubscribers() < 1)
     return false;
-  cv_bridge::CvImage cvImage;
-  cvImage.header.stamp = ros::Time::now();
-  cvImage.header.frame_id = "detection_image";
-  cvImage.encoding = sensor_msgs::image_encodings::BGR8;
-  cvImage.image = detectionImage;
-  detectionImagePublisher_.publish(*cvImage.toImageMsg());
-  ROS_DEBUG("Detection image has been published.");
+//  cv_bridge::CvImage cvImage;
+//  cvImage.header.stamp = ros::Time::now();
+//  cvImage.header.frame_id = "detection_image";
+//  cvImage.encoding = sensor_msgs::image_encodings::BGR8;
+//  cvImage.image = detectionImage;
+//  detectionImagePublisher_.publish(*cvImage.toImageMsg());
+//  ROS_DEBUG("Detection image has been published.");
   return true;
 }
 

@@ -19,9 +19,24 @@ void msgCallback(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msg){
 
         cv::imshow("Yolo V3", frame);
         cv::waitKey(30);
+        flag=false;
     }
 
 
+}
+
+cv::Mat horizontalStack(cv::Mat &left,cv::Mat &right){
+
+    if(left.empty() || right.empty()) return cv::Mat();
+
+    cv::Mat dst(cv::Size(left.cols*2,left.rows),left.type(),cv::Scalar::all(0));
+    cv::Mat matRoi = dst(cv::Rect(0,0,left.cols,left.rows));
+    left.copyTo(matRoi);
+
+    matRoi = dst(cv::Rect(left.cols,0,left.cols,left.rows));
+    right.copyTo(matRoi);
+
+    return dst;
 }
 
 
@@ -39,8 +54,16 @@ int main(int argc, char **argv)
     // Check if it is indeed a number
     if(!(video_sourceCmd >> video_source)) return 1;
     cv::VideoCapture cap(video_source);
+
+
     // Check if video device can be opened with the given index
     if(!cap.isOpened()) return 1;
+
+   cap.set(CV_CAP_PROP_FRAME_WIDTH,320);
+   cap.set(CV_CAP_PROP_FRAME_HEIGHT,240);
+
+
+
 
     sensor_msgs::ImagePtr msg;
 
@@ -49,13 +72,20 @@ int main(int argc, char **argv)
 
     while (nh.ok()) {
         cap >> frame;
-        // Check if grabbed frame is actually full with some content
-        if(!frame.empty()){
-             msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", frame).toImageMsg();
-             pub.publish(msg);
 
-             std::printf("send image \n");
-             cv::waitKey(1);
+        // Check if grabbed frame is actually full with some conten
+
+        if(!frame.empty()){
+
+            if(flag == false){
+                msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", frame).toImageMsg();
+                pub.publish(msg);
+
+                std::printf("send image \n");
+                cv::waitKey(1);
+                flag=true;
+            }
+
         }
         ros::spinOnce();
         loop_rate.sleep();
