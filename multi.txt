@@ -1,0 +1,125 @@
+#include <ros/ros.h>
+#include <image_transport/image_transport.h>
+#include <opencv2/highgui/highgui.hpp>
+#include <cv_bridge/cv_bridge.h>
+#include <darknet_ros_msgs/BoundingBox.h>
+#include <darknet_ros_msgs/BoundingBoxes.h>
+
+cv::Mat frame;
+
+bool flag = false;
+
+void msgCallback(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msg){
+
+    if(!frame.empty()){
+        for(int i=0;i<msg->bounding_boxes.size();i++){
+            if(msg->bounding_boxes[i].Class != "person") continue;
+            cv::rectangle(frame,cv::Point(msg->bounding_boxes[i].xmin,msg->bounding_boxes[i].ymin),cv::Point(msg->bounding_boxes[i].xmax,msg->bounding_boxes[i].ymax),cv::Scalar(255,0,255),3,8);
+        }
+
+        cv::imshow("Yolo V3", frame);
+        cv::waitKey(30);
+        
+        flag = false;
+    }
+
+
+}
+
+cv::Mat horizontalStack(cv::Mat &left,cv::Mat &right){
+
+    if(left.empty() || right.empty()) return cv::Mat();
+
+    cv::Mat dst(cv::Size(left.cols*2,left.rows),left.type(),cv::Scalar::all(0));
+    cv::Mat matRoi = dst(cv::Rect(0,0,left.cols,left.rows));
+    left.copyTo(matRoi);
+
+    matRoi = dst(cv::Rect(left.cols,0,left.cols,left.rows));
+    right.copyTo(matRoi);
+
+    return dst;
+}
+
+cv::Mat verticalStack(cv::Mat &up,cv::Mat &down){
+
+    if(up.empty() || down.empty()) return cv::Mat();
+
+    cv::Mat dst(cv::Size(up.cols,up.rows*2),up.type(),cv::Scalar::all(0));
+
+    cv::Mat matRoi = dst(cv::Rect(0,0,up.cols,up.rows));
+    up.copyTo(matRoi);
+
+    matRoi = dst(cv::Rect(0,up.rows,up.cols,up.rows));
+    down.copyTo(matRoi);
+
+    return dst;
+}
+
+
+int main(int argc, char **argv)
+{
+    ros::init(argc, argv, "bus_pub_video");
+    ros::NodeHandle nh;
+    image_transport::ImageTransport it(nh);
+    image_transport::Publisher pub = it.advertise("/camera/rgb/image_raw", 1);
+
+    ros::Subscriber yolo_boundingBox = nh.subscribe("/darknet_ros/bounding_boxes",100,msgCallback);
+
+    std::istringstream video_sourceCmd(argv[1]);
+    int video_source;
+    cv::VideoCapture cap1(0); // open the default camera
+    cv::VideoCapture cap2(1); // open the default camera
+    cv::VideoCapture cap3(2); // open the default camera
+
+    if(!cap1.isOpened() || !cap2.isOpened() || !cap3.isOpened())  // check if we succeeded
+        return -1;
+    cap1.set(CV_CAP_PROP_FRAME_WIDTH,320);
+    cap1.set(CV_CAP_PROP_FRAME_HEIGHT,240);
+
+    cap2.set(CV_CAP_PROP_FRAME_WIDTH,320);
+    cap2.set(CV_CAP_PROP_FRAME_HEIGHT,240);
+
+    cap3.set(CV_CAP_PROP_FRAME_WIDTH,320);
+    cap3.set(CV_CAP_PROP_FRAME_HEIGHT,240);
+
+
+    sensor_msgs::ImagePtr msg;
+
+    ros::Rate loop_rate(5);
+    cv::Mat Limg;
+    cv::Mat Rimg;
+    cv::Mat Uimg;
+    cv::Mat Dimg;
+
+    cv::namedWindow("Yolo V3",cv::WINDOW_NORMAL);
+    //cv::setWindowProperty("Yolo V3",cv::WND_PROP_FULLSCREEN,cv::WINDOW_FULLSCREEN);
+
+    while (nh.ok()) {
+
+       cap1 >> Limg; // get a new frame from camera
+       cap2 >> Rimg;
+       cap3 >> Dimg;  
+
+        Uimg = horizontalStack(Limg,Rimg);
+        Dimg = horizontalStack(Dimg,Dimg);
+        cv::resize(Dimg,Dimg,Uimg.size());
+        frame = verticalStack(Uimg,Dimg);
+
+        // Check if grabbed frame is actually full with some content
+        if(!frame.empty()){
+            if(flag == false)
+            {
+             msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", frame).toImageMsg();
+             pub.publish(msg);
+
+             std::printf("send image \n");
+             cv::waitKey(1);
+             flag = true;
+            }
+        }
+        ros::spinOnce();
+        loop_rate.sleep();
+    }
+
+    cv::destroyWindow("Yolo V3");
+}
