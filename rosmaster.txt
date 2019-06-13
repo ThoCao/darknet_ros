@@ -1,0 +1,11 @@
+# Robot Machine Configuration
+
+# The Local Host Ip Address = IP address for the Master Node
+export ROS_MASTER_URI=http://localhost:11311
+# The Ip Address for the Master Node
+export ROS_IP=192.168.0.13
+export ROS_HOSTNAME=192.168.0.13
+
+echo "ROS_HOSTNAME: "$ROS_HOSTNAME
+echo "ROS_IP: "$ROS_IP
+echo "ROS_MASTER_URI: "$ROS_MASTER_URI
