@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+  
+  <!-- Use YOLOv3 -->
+  <arg name="network_param_file"         default="$(find darknet_ros)/config/yolov3.yaml"/>
+
+
+  <!-- Include main launch file -->
+  <include file="$(find darknet_ros)/launch/darknet_ros.launch">
+    <arg name="network_param_file"    value="$(arg network_param_file)"/>
+  </include>
+
+
+  <machine name="thocao_node_2"
+         address="192.168.0.4"
+         user="thocao"
+         password="2019"
+         timeout="30"
+         env-loader="/home/thocao/catkin_ws/devel/remote_env.sh"
+         />
+
+  <node machine="thocao_node_2" name="bus_sub_video_cpu" pkg="bus_sub_video" type="yolo_pub_video1" args="0"/>
+
+</launch>
